@@ -5,6 +5,7 @@ API sous Vapor/Swift
 
 Personalisation:
 
+```
 struct Secrets {
     struct Server {
         static let hostname = [String]
@@ -16,3 +17,4 @@ struct Secrets {
         static let password = [String]
     }
 }
+```
