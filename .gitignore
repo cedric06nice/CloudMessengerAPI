@@ -1,0 +1,12 @@
+Packages
+.build
+xcuserdata
+*.xcodeproj
+DerivedData/
+.DS_Store
+db.sqlite
+.swiftpm
+Sources/App/Helpers/Secrets.swift
+/docker-compose.yml
+/Dockerfile
+/.dockerignore
