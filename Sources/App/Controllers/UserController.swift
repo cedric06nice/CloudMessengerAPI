@@ -8,56 +8,103 @@
 import Fluent
 import Vapor
 
+struct UserSignup: Content {
+    let name: String
+    let email: String
+    let password: String
+}
+
+struct NewSession: Content {
+    let token: String
+    let user: User.Public
+}
+
+extension UserSignup: Validatable {
+    static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: !.empty)
+        validations.add("email", as: String.self, is: !.empty)
+        validations.add("password", as: String.self, is: .count(6...))
+    }
+}
+
 struct UserController: RouteCollection {
     
     func boot(routes: RoutesBuilder) throws {
-        let users = routes.grouped("users")
-        users.post(use: create)
-        let basicGroup = routes.grouped(User.authenticator()).grouped(User.guardMiddleware())
-        basicGroup.post("login", use: login)
+        let usersRoute = routes.grouped("users")
+        usersRoute.post("signup", use: create)
+        
+        let passwordProtected = usersRoute.grouped(User.authenticator())
+        passwordProtected.post("login", use: login)
+        
+        let tokenProtected = usersRoute.grouped(UserToken.authenticator())
+        tokenProtected.get("me", use: getOwnUser)
+        tokenProtected.get("all-users", use: getAllUsers)
     }
     
-    
-    func create(req: Request) throws -> EventLoopFuture<User> {
-        let receivedData = try req.content.decode(User.Create.self)
-        let user = try User(name: receivedData.name, email: receivedData.email, passwordHash: Bcrypt.hash(receivedData.password))
-        return user.save(on: req.db).transform(to: user)
+    fileprivate func create(req: Request) throws -> EventLoopFuture<NewSession> {
+        try UserSignup.validate(content: req)
+        let userSignup = try req.content.decode(UserSignup.self)
+        let user = try User.create(from: userSignup)
+        var token: UserToken!
+        
+        return checkIfEmailExists(userSignup.email, req: req).flatMap { emailExists in
+            guard emailExists else {
+                return req.eventLoop.future(error: UserError.emailTaken)
+            }
+            
+            return checkIfNameExists(userSignup.name, req: req).flatMap { nameExists in
+                guard nameExists else {
+                    return req.eventLoop.future(error: UserError.nameTaken)
+                }
+                return user.save(on: req.db)
+            }
+        }.flatMap {
+            guard let newToken = try? user.createToken(source: .signup) else {
+                return req.eventLoop.future(error: Abort(.internalServerError))
+            }
+            token = newToken
+            return token.save(on: req.db)
+        }.flatMapThrowing {
+            NewSession(token: token.value, user: try user.asPublic())
+        }
     }
     
-    func login(req: Request) throws -> EventLoopFuture<UserToken> {
+    fileprivate func login(req: Request) throws -> EventLoopFuture<NewSession> {
         let user = try req.auth.require(User.self)
-        let token = try user.generateToken()
-        return token.save(on: req.db).transform(to: token)
-    }
-}
-
-extension User {
-    struct Create: Content {
-        var name: String
-        var email: String
-        var password: String
-    }
-}
-
-extension User : ModelAuthenticatable {
-    static var usernameKey = \User.$email
-    
-    static var passwordHashKey = \User.$passwordHash
-    
-    func verify(password: String) throws -> Bool {
-        return try Bcrypt.verify(password, created: self.passwordHash)
+        let token = try user.createToken(source: .login)
+        
+        return token.save(on: req.db)
+            .flatMapThrowing {
+                NewSession(token: token.value, user: try user.asPublic())
+            }
     }
     
-    func generateToken() throws -> UserToken {
-        return try UserToken(value: [UInt8].random(count: 16).base64, userID: self.requireID())
+    fileprivate func getOwnUser(req: Request) throws -> User {
+        try req.auth.require(User.self)
     }
     
-}
-
-
-extension UserToken : ModelTokenAuthenticatable {
-    static let valueKey = \UserToken.$value
-    static let userKey = \UserToken.$user
+    fileprivate func getAllUsers(req: Request) throws -> EventLoopFuture<[User.Public]> {
+        return User.query(on: req.db).all()
+            .flatMapThrowing { (fullUserList: [User]) -> [User.Public] in
+                var result = [User.Public]()
+                for publicUser in fullUserList {
+                    try result.append(publicUser.asPublic())
+                }
+                return result
+            }
+    }
     
-    var isValid: Bool { true }
+    fileprivate func checkIfEmailExists(_ email: String, req: Request) -> EventLoopFuture<Bool> {
+        User.query(on: req.db)
+            .filter(\.$email == email)
+            .first()
+            .map { $0 == nil }
+    }
+    
+    fileprivate func checkIfNameExists(_ name: String, req: Request) -> EventLoopFuture<Bool> {
+        User.query(on: req.db)
+            .filter(\.$name == name)
+            .first()
+            .map { $0 == nil }
+    }
 }

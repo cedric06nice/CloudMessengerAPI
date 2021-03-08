@@ -19,10 +19,14 @@ public func configure(_ app: Application) throws {
     } else {
         app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
     }
-
-    app.migrations.add(CreateTodo())
+    
+    // configure migrations
     app.migrations.add(CreateUser())
     app.migrations.add(CreateUserToken())
+    app.migrations.add(CreateMessage())
+
+    // enable automatic migration
+    try app.autoMigrate().wait()
 
     // register routes
     try routes(app)
