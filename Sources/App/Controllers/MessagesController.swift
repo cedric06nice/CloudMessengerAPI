@@ -13,7 +13,7 @@ struct MessagesController: RouteCollection {
     func boot(routes: RoutesBuilder) throws {
         let messagesRoute = routes.grouped("messages")
         
-        let tokenProtected = messagesRoute.grouped(UserToken.authenticator())
+        let tokenProtected = messagesRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
         tokenProtected.post("new-message", use: newMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
     }

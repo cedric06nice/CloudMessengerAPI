@@ -15,6 +15,7 @@ struct Secrets {
         static let hostname = [String]
         static let username = [String]
         static let password = [String]
+        static let database = [String]
     }
 }
 ```

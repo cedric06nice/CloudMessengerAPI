@@ -15,7 +15,7 @@ public func configure(_ app: Application) throws {
         app.databases.use(.mysql(hostname: Secrets.MySQL.hostname,
                                  username: Secrets.MySQL.username,
                                  password: Secrets.MySQL.password,
-                                 database: "vapor2",
+                                 database: Secrets.MySQL.database,
                                  tlsConfiguration: TLSConfiguration.forClient(certificateVerification: .none)), as: .mysql)
     } else {
         app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
