@@ -9,13 +9,21 @@ import Fluent
 import Vapor
 
 struct MessagesController: RouteCollection {
-    
+    var websocketClient = WebSocketController()
     func boot(routes: RoutesBuilder) throws {
         let messagesRoute = routes.grouped("messages")
         
         let tokenProtected = messagesRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
+        let tokenProtected = messagesRoute.grouped(UserToken.authenticator())
         tokenProtected.post("new-message", use: newMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
+        
+        //création du Websocket protéger par token auth
+        tokenProtected.webSocket("message-web-socket") { (req, ws) in
+            websocketClient.WebSocketsManagement(ws: ws, req: req)
+        }
+        
+        
     }
     
     fileprivate func newMessage(req: Request) throws -> EventLoopFuture<Message> {
