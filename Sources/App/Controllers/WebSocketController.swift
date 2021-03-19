@@ -31,22 +31,24 @@ class WebSocketController {
                 var messagesLoaded : [Message.MessageToSend] = []
                 //On transforme nos messages en Message.MessageToSend pour qu'il est un bon format
                 for message in messages{
-                    message.$owner.load(on: req.db).map {
-                        //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
-                        guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
-                        if let timestamp = message.timestamp {
-                        let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                            messagesLoaded.append(messageToSend)
-                        }
-                    }
-                        //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
-                        guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
-                        self.sendMessageForAll(message: allMessagesJson)
+                    do {
+                        try message.$owner.load(on: req.db).map {
+                            //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
+                            guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
+                            if let timestamp = message.timestamp {
+                                let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
+                                messagesLoaded.append(messageToSend)
+                            }
+                        }.wait()
+                    }catch{}
+                    //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
+                    guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
+                    self.sendMessageForAll(message: allMessagesJson)
                     
                 }
             }
         }
-
+        
         if let jsonText = text.data(using: .utf8) {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText){
                 message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
@@ -56,18 +58,20 @@ class WebSocketController {
                     var messagesLoaded : [Message.MessageToSend] = []
                     //On transforme nos messages en Message.MessageToSend pour qu'il est un bon format
                     for message in messages{
-                        message.$owner.load(on: req.db).map {
-                            //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
-                            guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
-                            if let timestamp = message.timestamp {
-                            let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                                messagesLoaded.append(messageToSend)
-                            }
-                        }.map {
-                            //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
-                            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
-                            self.sendMessageForAll(message: allMessagesJson)
-                        }
+                        do {
+                            try message.$owner.load(on: req.db).map {
+                                //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
+                                guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
+                                if let timestamp = message.timestamp {
+                                    let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
+                                    messagesLoaded.append(messageToSend)
+                                }
+                            }.wait()
+                        }catch{}
+                        //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
+                        guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
+                        self.sendMessageForAll(message: allMessagesJson)
+                        
                     }
                 }
             }
