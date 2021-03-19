@@ -38,11 +38,11 @@ class WebSocketController {
                         let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
                             messagesLoaded.append(messageToSend)
                         }
-                    }.map {
+                    }
                         //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
                         guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
                         self.sendMessageForAll(message: allMessagesJson)
-                    }
+                    
                 }
             }
         }
