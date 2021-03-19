@@ -25,24 +25,21 @@ class WebSocketController {
     
     
     //Lorsqu'on recoit du texte on l'ananlyse, on verify si c'est un message...
-    func onReceive(ws: WebSocket, req: Request, text: String)  {
+    func onReceive(ws: WebSocket, req: Request, text: String) throws {
         if text == "get-all-messages" {
-            var messagesLoaded : [Message.MessageToSend] = []
-            req.db.query(Message.self).all().map { (messages) in
-                //On transforme nos messages en Message.MessageToSend pour qu'il est un bon format
-                messages.map { (message) in
-                    message.$owner.load(on: req.db).map {
-                        //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
-                        guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
-                        if let timestamp = message.timestamp {
-                            let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                            messagesLoaded.append(messageToSend)
-                        }
-                    }
-                }.map{
-                    guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
-                    self.sendMessageForAll(message: allMessagesJson)}
+            //var messagesLoaded : [Message.MessageToSend] = []
+            let messages = try req.db.query(Message.self).all().wait()
+            let messagesToSend = try messages.map { (message) -> Message.MessageToSend in
+                try message.$owner.load(on: req.db).wait()
+                guard let user = message.$owner.value, let messageID = message.id else {throw Abort(.conflict)}
+                if let timestamp = message.timestamp {
+                    return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
             }
+                throw Abort(.conflict)
+            }
+            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
+            self.sendMessageForAll(message: allMessagesJson)
+            
         }
     
         
@@ -51,24 +48,18 @@ class WebSocketController {
                 message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
                 var messagesLoaded : [Message.MessageToSend] = []
                 //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
-                req.db.query(Message.self).all().map { (messages) in
-                    
-                    messages.map { (message) in
-                        message.$owner.load(on: req.db).map {
-                            //On charge les donnée du user qui a posté les message pour pouvoir les exploité /!\ Important dans vapor si on oublie de load -> Fatal Error
-                            guard let user = message.$owner.value, let messageID = message.id else { print("erreur recup user ou id"); return}
-                            if let timestamp = message.timestamp {
-                                let messageToSend = Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                                messagesLoaded.append(messageToSend)
-                    }
-                    //On transforme nos messages en Message.MessageToSend pour qu'il est un bon format
-                            }
-                        }.map({
-                            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesLoaded)else {return}
-                            self.sendMessageForAll(message: allMessagesJson)
-                        })
-                        //Une fois notre tableau rempli de Messages.MessageToSend on peut l'envoyé à tous nos utilisateurs =)
+                let messages = try req.db.query(Message.self).all().wait()
+                let messagesToSend = try messages.map { (message) -> Message.MessageToSend in
+                    try message.$owner.load(on: req.db).wait()
+                    guard let user = message.$owner.value, let messageID = message.id else {throw Abort(.conflict)}
+                    if let timestamp = message.timestamp {
+                        return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
                 }
+                    throw Abort(.conflict)
+                }
+                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
+                self.sendMessageForAll(message: allMessagesJson)
+                
             }
         }
     }
@@ -78,7 +69,7 @@ class WebSocketController {
             let user = try req.auth.require(User.self) // /!\ Attention le fait de passer par un TokenGroup ne vous empêche pas d'accèder à la connexion au WebSocket c'est pourquoi ici je verifie si je peut recupérer un user et sinon j'envoie un message et je ferme la connexion
             addWs(ws: ws) //ajout d'un WebSocket à chaque connexion d'un utilisateur different.
             ws.onText { (ws, text) in
-                self.onReceive(ws: ws, req: req, text: text)
+                try? self.onReceive(ws: ws, req: req, text: text)
             }
         }catch {
             ws.send("Unauthorized !")

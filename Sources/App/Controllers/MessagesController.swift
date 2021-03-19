@@ -19,7 +19,8 @@ struct MessagesController: RouteCollection {
         tokenProtected.get("all-messages", use: getAllMessages)
         
         //création du Websocket protéger par token auth
-        tokenProtected.webSocket("message-web-socket") { (req, ws) in
+        tokenProtected.webSocket("message-web-socket")
+        { (req, ws) in
             websocketClient.WebSocketsManagement(ws: ws, req: req)
         }
         
