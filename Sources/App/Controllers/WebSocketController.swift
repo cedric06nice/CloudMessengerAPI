@@ -23,23 +23,27 @@ class WebSocketController {
         }
     }
     
+    func getAllMessagesAndSendForAll(req: Request) {
+        var messagesToSend : [Message.MessageToSend] = []
+        Message.query(on: req.db).with(\.$owner).all().map { (messages) in
+            for message in messages {
+                if let id = message.id,
+                   let user = message.$owner.value,
+                   let timestamp = message.timestamp {
+                    let messageToSend = Message.MessageToSend(id: id, subject: message.subject, timestamp: timestamp, user: user)
+                    messagesToSend.append(messageToSend)
+                }
+            }
+            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
+            self.sendMessageForAll(message: allMessagesJson)
+        }
+    }
+    
     
     //Lorsqu'on recoit du texte on l'ananlyse, on verify si c'est un message...
     func onReceive(ws: WebSocket, req: Request, text: String) throws {
         if text == "get-all-messages" {
-            //var messagesLoaded : [Message.MessageToSend] = []
-            
-            try Message.query(on: req.db).with(\.$owner).all().map { (messages) -> [Message.MessageToSend] in
-                messages.map { (message) -> Message.MessageToSend in
-                    let user = message.$owner.wrappedValue
-                    let id = try! message.requireID()
-                    let timestamp = message.timestamp
-                    return Message.MessageToSend(id: id, subject: message.subject, timestamp: timestamp, user: user)
-                }
-            }.map { (messagesToSend) in
-                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
-                self.sendMessageForAll(message: allMessagesJson)
-            }
+            getAllMessagesAndSendForAll(req: req)
         }
         
     
@@ -47,20 +51,8 @@ class WebSocketController {
         if let jsonText = text.data(using: .utf8) {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText){
                 message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
-                var messagesLoaded : [Message.MessageToSend] = []
                 //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
-                let messages = try req.db.query(Message.self).all().wait()
-                let messagesToSend = try messages.map { (message) -> Message.MessageToSend in
-                    try message.$owner.load(on: req.db).wait()
-                    guard let user = message.$owner.value, let messageID = message.id else {throw Abort(.conflict)}
-                    if let timestamp = message.timestamp {
-                        return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                }
-                    throw Abort(.conflict)
-                }
-                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
-                self.sendMessageForAll(message: allMessagesJson)
-                
+                getAllMessagesAndSendForAll(req: req)
             }
         }
     }
@@ -93,10 +85,10 @@ extension Message {
     struct MessageToSend : Content{
         let id:UUID
         let subject:String
-        let timestamp: Date?
+        let timestamp: Date
         let username:String
         let userID:UUID?
-        init(id:UUID, subject:String, timestamp:Date?, user:User) {
+        init(id:UUID, subject:String, timestamp:Date, user:User) {
             self.id = id
             self.subject = subject
             self.username = user.name
