@@ -45,6 +45,8 @@ class WebSocketController {
                     let messages = optionalArrayMessageToSend.map { (messagesOptional) -> Message.MessageToSend in
                         return messagesOptional!
                     }
+                    guard let allMessagesJson = try? JSONEncoder().encodeToString(messages)else {print("echec conversion tableau message to send en json");return}
+                    self.sendMessageForAll(message: allMessagesJson)
                 }
             })
         }
