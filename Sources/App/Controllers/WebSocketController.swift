@@ -28,28 +28,20 @@ class WebSocketController {
     func onReceive(ws: WebSocket, req: Request, text: String) throws {
         if text == "get-all-messages" {
             //var messagesLoaded : [Message.MessageToSend] = []
-            let messages = req.db.query(Message.self).all().map({ (messages) -> [Message.MessageToSend?] in
-                return messages.map { (message) -> Message.MessageToSend? in
-                    return try? message.$owner.load(on: req.db).map { (_) -> Message.MessageToSend? in
-                        guard let user = message.$owner.value,
-                              let messageID = message.id,
-                              let timestamp = message.timestamp
-                        else{return nil}
-                        return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-                    }.wait()
-                    }
-            }).map({ (optionalArrayMessageToSend) in
-                if optionalArrayMessageToSend.contains(where: { (messageOptional) -> Bool in
-                    return messageOptional == nil
-                }){}else{
-                    let messages = optionalArrayMessageToSend.map { (messagesOptional) -> Message.MessageToSend in
-                        return messagesOptional!
-                    }
-                    guard let allMessagesJson = try? JSONEncoder().encodeToString(messages)else {print("echec conversion tableau message to send en json");return}
-                    self.sendMessageForAll(message: allMessagesJson)
+            
+            try Message.query(on: req.db).with(\.$owner).all().map { (messages) -> [Message.MessageToSend] in
+                messages.map { (message) -> Message.MessageToSend in
+                    let user = message.$owner.wrappedValue
+                    let id = try! message.requireID()
+                    let timestamp = message.timestamp
+                    return Message.MessageToSend(id: id, subject: message.subject, timestamp: timestamp, user: user)
                 }
-            })
+            }.map { (messagesToSend) in
+                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
+                self.sendMessageForAll(message: allMessagesJson)
+            }
         }
+        
     
         
         if let jsonText = text.data(using: .utf8) {
@@ -101,10 +93,10 @@ extension Message {
     struct MessageToSend : Content{
         let id:UUID
         let subject:String
-        let timestamp: Date
+        let timestamp: Date?
         let username:String
         let userID:UUID?
-        init(id:UUID, subject:String, timestamp:Date, user:User) {
+        init(id:UUID, subject:String, timestamp:Date?, user:User) {
             self.id = id
             self.subject = subject
             self.username = user.name
