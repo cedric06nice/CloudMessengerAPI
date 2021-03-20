@@ -28,18 +28,25 @@ class WebSocketController {
     func onReceive(ws: WebSocket, req: Request, text: String) throws {
         if text == "get-all-messages" {
             //var messagesLoaded : [Message.MessageToSend] = []
-            let messages = try req.db.query(Message.self).all().wait()
-            let messagesToSend = try messages.map { (message) -> Message.MessageToSend in
-                try message.$owner.load(on: req.db).wait()
-                guard let user = message.$owner.value, let messageID = message.id else {throw Abort(.conflict)}
-                if let timestamp = message.timestamp {
-                    return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
-            }
-                throw Abort(.conflict)
-            }
-            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
-            self.sendMessageForAll(message: allMessagesJson)
-            
+            let messages = req.db.query(Message.self).all().map({ (messages) -> [Message.MessageToSend?] in
+                return messages.map { (message) -> Message.MessageToSend? in
+                    return try? message.$owner.load(on: req.db).map { (_) -> Message.MessageToSend? in
+                        guard let user = message.$owner.value,
+                              let messageID = message.id,
+                              let timestamp = message.timestamp
+                        else{return nil}
+                        return Message.MessageToSend(id: messageID, subject: message.subject, timestamp: timestamp, user: user)
+                    }.wait()
+                    }
+            }).map({ (optionalArrayMessageToSend) in
+                if optionalArrayMessageToSend.contains(where: { (messageOptional) -> Bool in
+                    return messageOptional == nil
+                }){}else{
+                    let messages = optionalArrayMessageToSend.map { (messagesOptional) -> Message.MessageToSend in
+                        return messagesOptional!
+                    }
+                }
+            })
         }
     
         
