@@ -13,16 +13,19 @@ final class Message: Model, Content {
     
     @ID(key: .id) var id: UUID?
     @Timestamp(key: Constants.Message.FieldKeys.timestamp, on: .create) var timestamp: Date?
-    @Parent(key: Constants.Message.FieldKeys.owner) var owner: User
+    @Parent(key: Constants.Message.FieldKeys.ownerId) var ownerId: User.IDValue
     @Field(key: Constants.Message.FieldKeys.subject) var subject: String
-
+    @Field(key: Constants.Message.FieldKeys.flag) var flag: Bool?
+    
     init() { }
     
     init(id: UUID? = nil,
-         owner: User.IDValue,
-         subject: String) {
+         ownerId: User.IDValue,
+         subject: String,
+         flag: Bool? = nil) {
         self.id = id
-        self.owner.id = owner
+        self.ownerId = owner
         self.subject = subject
+        self.flag = flag
     }
 }

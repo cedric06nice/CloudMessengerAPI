@@ -13,7 +13,9 @@ struct CreateMessage: Migration {
             .id()
             .field(Constants.Message.FieldKeys.timestamp, .datetime, .required)
             .field(Constants.Message.FieldKeys.subject, .string, .required)
-            .field(Constants.Message.FieldKeys.owner, .uuid, .required, .references("users", "id"))
+            .field(Constants.Message.FieldKeys.ownerId, .uuid, .required, .references("users", "id"))
+            .field(Constants.Message.FieldKeys.flag, .bool)
+            .field(Constants.Message.FieldKeys.flagChecked, .bool)
             .create()
     }
 

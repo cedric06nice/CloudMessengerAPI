@@ -14,17 +14,13 @@ struct MessagesController: RouteCollection {
         let messagesRoute = routes.grouped("messages")
         
         let tokenProtected = messagesRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
-        //let tokenProtected = messagesRoute.grouped(UserToken.authenticator())
         tokenProtected.post("new-message", use: newMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
         
         //création du Websocket protéger par token auth
-        tokenProtected.webSocket("message-web-socket")
-        { (req, ws) in
+        tokenProtected.webSocket("message-web-socket") { (req, ws) in
             websocketClient.WebSocketsManagement(ws: ws, req: req)
         }
-        
-        
     }
     
     fileprivate func newMessage(req: Request) throws -> EventLoopFuture<Message> {
@@ -34,6 +30,8 @@ struct MessagesController: RouteCollection {
     }
     
     fileprivate func getAllMessages(req: Request) throws -> EventLoopFuture<[Message]> {
-        return Message.query(on: req.db).all()
+        return Message.query(on: req.db)
+            .sort(\.$timestamp, .descending)
+            .all()
     }
 }

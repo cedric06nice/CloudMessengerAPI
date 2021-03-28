@@ -15,6 +15,8 @@ struct CreateUser: Migration {
             .field(Constants.Users.FieldKeys.email, .string, .required)
             .field(Constants.Users.FieldKeys.password_hash, .string, .required)
             .field(Constants.Users.FieldKeys.created_at, .datetime, .required)
+            .field(Constants.Users.FieldKeys.isModerator, .bool, .required)
+            .field(Constants.Users.FieldKeys.isActive, .bool, .required)
             .unique(on: Constants.Users.FieldKeys.email)
             .unique(on: Constants.Users.FieldKeys.name)
             .create()

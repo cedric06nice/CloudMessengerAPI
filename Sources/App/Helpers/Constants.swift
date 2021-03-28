@@ -13,15 +13,21 @@ struct Constants {
             static var name: FieldKey = "name"
             static var email: FieldKey = "email"
             static var password: FieldKey = "password"
-            static var password_hash: FieldKey = "password_hash"
-            static var created_at: FieldKey = "created_at"
+            static var passwordHash: FieldKey = "password_hash"
+            static var createdAt: FieldKey = "created_at"
+            static var flag: FieldKey = "flag"
+            static var isModerator: FieldKey = "is_moderator"
+            static var isActive: FieldKey = "is_active"
         }
         struct FieldKeysAsString {
             static var name = "name"
             static var email = "email"
             static var password = "password"
-            static var password_hash = "password_hash"
-            static var created_at = "created_at"
+            static var passwordHash = "password_hash"
+            static var createdAt = "created_at"
+            static var flag = "flag"
+            static var isModerator = "is_moderator"
+            static var isActive = "is_active"
         }
     }
     struct Token {
@@ -44,13 +50,17 @@ struct Constants {
         static var schema = "messages"
         struct FieldKeys {
             static var timestamp: FieldKey = "timestamp"
-            static var owner: FieldKey = "owner"
-            static var subject: FieldKey = "subject"
+            static var ownerId: FieldKey = "owner_id"
+            static var message: FieldKey = "message"
+            static var flag: FieldKey = "flag"
+            static var flagChecked: FieldKey = "flag_checked"
         }
         struct FieldKeysAsString {
             static var timestamp = "timestamp"
-            static var owner = "owner"
-            static var subject = "subject"
+            static var ownerId = "owner_id"
+            static var message = "message"
+            static var flag = "flag"
+            static var flagChecked = "flag_checked"
         }
     }
 }

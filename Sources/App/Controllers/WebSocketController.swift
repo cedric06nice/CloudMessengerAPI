@@ -25,18 +25,27 @@ class WebSocketController {
     
     func getAllMessagesAndSendForAll(req: Request) {
         var messagesToSend : [Message.MessageToSend] = []
-        Message.query(on: req.db).with(\.$owner).all().map { (messages) in
-            for message in messages {
-                if let id = message.id,
-                   let user = message.$owner.value,
-                   let timestamp = message.timestamp {
-                    let messageToSend = Message.MessageToSend(id: id, subject: message.subject, timestamp: timestamp, user: user)
-                    messagesToSend.append(messageToSend)
+        Message.query(on: req.db)
+            .with(\.$owner)
+            .all()
+            .map { (messages) in
+                for message in messages {
+                    if let id = message.id,
+                       let user = message.$owner.value,
+                       let timestamp = message.timestamp {
+                        let messageToSend = Message.MessageToSend(id: id,
+                                                                  subject: message.subject,
+                                                                  timestamp: timestamp,
+                                                                  user: user)
+                        messagesToSend.append(messageToSend)
+                    }
                 }
+                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend) else {
+                    print("echec conversion tableau message to send en json")
+                    return
+                }
+                self.sendMessageForAll(message: allMessagesJson)
             }
-            guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend)else {print("echec conversion tableau message to send en json");return}
-            self.sendMessageForAll(message: allMessagesJson)
-        }
     }
     
     
@@ -45,8 +54,6 @@ class WebSocketController {
         if text == "get-all-messages" {
             getAllMessagesAndSendForAll(req: req)
         }
-        
-    
         
         if let jsonText = text.data(using: .utf8) {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText){
@@ -59,7 +66,7 @@ class WebSocketController {
     
     func WebSocketsManagement(ws: WebSocket, req: Request) {
         do {
-            let user = try req.auth.require(User.self) // /!\ Attention le fait de passer par un TokenGroup ne vous empêche pas d'accèder à la connexion au WebSocket c'est pourquoi ici je verifie si je peut recupérer un user et sinon j'envoie un message et je ferme la connexion
+            let _ = try req.auth.require(User.self) // /!\ Attention le fait de passer par un TokenGroup ne vous empêche pas d'accèder à la connexion au WebSocket c'est pourquoi ici je verifie si je peut recupérer un user et sinon j'envoie un message et je ferme la connexion
             addWs(ws: ws) //ajout d'un WebSocket à chaque connexion d'un utilisateur different.
             ws.onText { (ws, text) in
                 try? self.onReceive(ws: ws, req: req, text: text)
@@ -79,18 +86,17 @@ extension JSONEncoder {
     }
 }
 
-
 //On ajoute une extension à Message pour pouvoir envoyé les données en Json qui nous interesse
 extension Message {
     struct MessageToSend : Content{
         let id:UUID
-        let subject:String
-        let timestamp: Date
+        let message:String
+        let timestamp:Date
         let username:String
         let userID:UUID?
-        init(id:UUID, subject:String, timestamp:Date, user:User) {
+        init(id:UUID, message:String, timestamp:Date, user:User) {
             self.id = id
-            self.subject = subject
+            self.message = message
             self.username = user.name
             self.userID = user.id
             self.timestamp = timestamp
