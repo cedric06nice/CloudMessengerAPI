@@ -26,15 +26,15 @@ class WebSocketController {
     func getAllMessagesAndSendForAll(req: Request) {
         var messagesToSend : [Message.MessageToSend] = []
         Message.query(on: req.db)
-            .with(\.$owner)
+            .with(\.$ownerId)
             .all()
             .map { (messages) in
                 for message in messages {
                     if let id = message.id,
-                       let user = message.$owner.value,
+                       let user = message.$ownerId.value,
                        let timestamp = message.timestamp {
                         let messageToSend = Message.MessageToSend(id: id,
-                                                                  subject: message.subject,
+                                                                  message: message.message,
                                                                   timestamp: timestamp,
                                                                   user: user)
                         messagesToSend.append(messageToSend)

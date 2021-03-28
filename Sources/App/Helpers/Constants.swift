@@ -53,14 +53,12 @@ struct Constants {
             static var ownerId: FieldKey = "owner_id"
             static var message: FieldKey = "message"
             static var flag: FieldKey = "flag"
-            static var flagChecked: FieldKey = "flag_checked"
         }
         struct FieldKeysAsString {
             static var timestamp = "timestamp"
             static var ownerId = "owner_id"
             static var message = "message"
             static var flag = "flag"
-            static var flagChecked = "flag_checked"
         }
     }
 }

@@ -23,8 +23,8 @@ final class User: Model, Content {
     @ID(key: .id) var id: UUID?
     @Field(key: Constants.Users.FieldKeys.name) var name: String
     @Field(key: Constants.Users.FieldKeys.email) var email: String
-    @Field(key: Constants.Users.FieldKeys.password_hash) var passwordHash: String
-    @Timestamp(key: Constants.Users.FieldKeys.created_at, on: .create) var createdAt: Date?
+    @Field(key: Constants.Users.FieldKeys.passwordHash) var passwordHash: String
+    @Timestamp(key: Constants.Users.FieldKeys.createdAt, on: .create) var createdAt: Date?
     @Field(key: Constants.Users.FieldKeys.isModerator) var isModerator: Bool
     @Field(key: Constants.Users.FieldKeys.isActive) var isActive: Bool
 
@@ -34,8 +34,8 @@ final class User: Model, Content {
          name: String,
          email: String,
          passwordHash: String,
-         isModerator: Bool,
-         isActive: Bool
+         isModerator: Bool = false,
+         isActive: Bool = true
          ) {
         self.id = id
         self.name = name
