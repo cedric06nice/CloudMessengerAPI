@@ -9,17 +9,19 @@ import Fluent
 import Vapor
 
 struct MessagesController: RouteCollection {
-    var websocketClient = WebSocketController()
+    var websocketController = WebSocketController()
     func boot(routes: RoutesBuilder) throws {
         let messagesRoute = routes.grouped("messages")
         
         let tokenProtected = messagesRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
         tokenProtected.post("new-message", use: newMessage)
+        tokenProtected.post("report_message", use: reportMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
+        
         
         //création du Websocket protéger par token auth
         tokenProtected.webSocket("message-web-socket") { (req, ws) in
-            websocketClient.WebSocketsManagement(ws: ws, req: req)
+            websocketController.WebSocketsManagement(ws: ws, req: req)
         }
     }
     
@@ -33,5 +35,25 @@ struct MessagesController: RouteCollection {
         return Message.query(on: req.db)
             .sort(\.$timestamp, .descending)
             .all()
+    }
+    
+    fileprivate func reportMessage(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        let id = try req.content.decode(Message.PostingMessageId.self).id
+        return Message.find(id, on: req.db)
+            .unwrap(or: Abort(.badRequest))
+            .flatMap { (message) -> EventLoopFuture<HTTPStatus> in
+                message.flag = true
+                return message.save(on: req.db)
+                    .map({ () in
+                        websocketController.getAllMessagesAndSendForAll(req: req)
+                    })
+                    .transform(to: HTTPStatus.init(statusCode: 200))
+            }
+    }
+}
+
+extension Message {
+    struct PostingMessageId : Decodable {
+        let id:UUID
     }
 }

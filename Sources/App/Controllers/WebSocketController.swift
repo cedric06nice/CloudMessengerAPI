@@ -10,22 +10,23 @@ import Vapor
 
 class WebSocketController {
     //On crée un tableau vide à l'instance qui servira à recuillir tous les clients qui se connectent au serveur 
-    var storage: [WebSocket] = []
+    var storage: [WebSocketWithId] = []
+    var timer:Timer? = nil
     
-    func addWs(ws: WebSocket) {
-        storage.append(ws)
+    func addWs(webSocketWithID: WebSocketWithId) {
+        storage.append(webSocketWithID)
     }
     
     //lorsque j'appelle cette fonction j'envoie un message à toutes les personnes connecté
     func sendMessageForAll(message: String) {
-        for ws in storage {
-            ws.send(message)
+        for webSocketWithID in storage {
+            webSocketWithID.ws.send(message)
         }
     }
     
     func getAllMessagesAndSendForAll(req: Request) {
         var messagesToSend : [Message.MessageToSend] = []
-        Message.query(on: req.db)
+        _ = Message.query(on: req.db)
             .with(\.$ownerId)
             .all()
             .map { (messages) in
@@ -55,9 +56,12 @@ class WebSocketController {
             getAllMessagesAndSendForAll(req: req)
         }
         
+        print(text)
+        
         if let jsonText = text.data(using: .utf8) {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText){
-                message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
+                print("message recu")
+                _ = message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
                 //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
                 getAllMessagesAndSendForAll(req: req)
             }
@@ -66,14 +70,28 @@ class WebSocketController {
     
     func WebSocketsManagement(ws: WebSocket, req: Request) {
         do {
-            let _ = try req.auth.require(User.self) // /!\ Attention le fait de passer par un TokenGroup ne vous empêche pas d'accèder à la connexion au WebSocket c'est pourquoi ici je verifie si je peut recupérer un user et sinon j'envoie un message et je ferme la connexion
-            addWs(ws: ws) //ajout d'un WebSocket à chaque connexion d'un utilisateur different.
-            ws.onText { (ws, text) in
-                try? self.onReceive(ws: ws, req: req, text: text)
-            }
+            let _ = try req.auth.require(User.self)
+            webSocketInit(webSocket: ws, req: req)
         }catch {
             ws.send("Unauthorized !")
-            ws.close()
+            _ = ws.close()
+        }
+    }
+    
+    func webSocketInit(webSocket: WebSocket, req:Request){
+        let webSocketWithID = WebSocketWithId(id: UUID(), ws: webSocket)
+        addWs(webSocketWithID: webSocketWithID)
+        webSocketWithID.ws.onText { (ws, text) in
+            try? self.onReceive(ws: ws, req: req, text: text)
+        }
+        _ = webSocketWithID.ws.onClose.always { (_) in
+            self.onClose(webSocketWithId: webSocketWithID)
+        }
+    }
+    
+    func onClose(webSocketWithId:WebSocketWithId){
+        storage.removeAll { (wsId) -> Bool in
+            return wsId.id == webSocketWithId.id
         }
     }
 }
@@ -103,3 +121,11 @@ extension Message {
         }
     }
 }
+
+
+struct WebSocketWithId {
+    let id:UUID
+    let ws:WebSocket
+}
+
+
