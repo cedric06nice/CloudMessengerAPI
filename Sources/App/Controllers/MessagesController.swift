@@ -15,7 +15,7 @@ struct MessagesController: RouteCollection {
         
         let tokenProtected = messagesRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
         tokenProtected.post("new-message", use: newMessage)
-        tokenProtected.post("report_message", use: reportMessage)
+        tokenProtected.post("report-message", use: reportMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
         
         
