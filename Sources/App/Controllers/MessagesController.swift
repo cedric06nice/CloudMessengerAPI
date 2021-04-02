@@ -38,13 +38,16 @@ struct MessagesController: RouteCollection {
     }
     
     fileprivate func reportMessage(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        let id = try req.content.decode(Message.PostingMessageId.self).id
-        return Message.find(id, on: req.db)
+        print("report")
+        let messageIdReceive = try req.content.decode(Message.PostingMessageId.self)
+        print(messageIdReceive)
+        return Message.find(messageIdReceive.id, on: req.db)
             .unwrap(or: Abort(.badRequest))
             .flatMap { (message) -> EventLoopFuture<HTTPStatus> in
                 message.flag = true
-                return message.save(on: req.db)
+                return message.update(on: req.db)
                     .map({ () in
+                        print("message updated")
                         websocketController.getAllMessagesAndSendForAll(req: req)
                     })
                     .transform(to: HTTPStatus.init(statusCode: 200))
@@ -53,7 +56,7 @@ struct MessagesController: RouteCollection {
 }
 
 extension Message {
-    struct PostingMessageId : Decodable {
+    struct PostingMessageId : Content {
         let id:UUID
     }
 }

@@ -37,7 +37,8 @@ class WebSocketController {
                         let messageToSend = Message.MessageToSend(id: id,
                                                                   message: message.message,
                                                                   timestamp: timestamp,
-                                                                  user: user)
+                                                                  user: user,
+                                                                  flag: message.flag)
                         messagesToSend.append(messageToSend)
                     }
                 }
@@ -112,12 +113,15 @@ extension Message {
         let timestamp:Date
         let username:String
         let userID:UUID?
-        init(id:UUID, message:String, timestamp:Date, user:User) {
+        let flag:Bool?
+        
+        init(id:UUID, message:String, timestamp:Date, user:User, flag:Bool?) {
             self.id = id
             self.message = message
             self.username = user.name
             self.userID = user.id
             self.timestamp = timestamp
+            self.flag = flag
         }
     }
 }
