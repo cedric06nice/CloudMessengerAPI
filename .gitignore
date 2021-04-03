@@ -10,3 +10,4 @@ Sources/App/Helpers/Secrets.swift
 /docker-compose.yml
 /Dockerfile
 /.dockerignore
+/Sources/App/Helpers/Secrets.swift

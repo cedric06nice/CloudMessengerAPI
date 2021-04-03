@@ -12,6 +12,8 @@ struct UserSignup: Content {
     let name: String
     let email: String
     let password: String
+    let isModerator: Bool
+    let isActive: Bool
 }
 
 struct NewSession: Content {

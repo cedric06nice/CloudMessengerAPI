@@ -14,6 +14,8 @@ final class User: Model, Content {
         let id: UUID
         let name: String
         let createdAt: Date?
+        let isModerator: Bool
+        let isActive: Bool
     }
     
     static let schema = Constants.Users.schema
@@ -21,19 +23,26 @@ final class User: Model, Content {
     @ID(key: .id) var id: UUID?
     @Field(key: Constants.Users.FieldKeys.name) var name: String
     @Field(key: Constants.Users.FieldKeys.email) var email: String
-    @Field(key: Constants.Users.FieldKeys.password_hash) var passwordHash: String
-    @Timestamp(key: Constants.Users.FieldKeys.created_at, on: .create) var createdAt: Date?
-    
+    @Field(key: Constants.Users.FieldKeys.passwordHash) var passwordHash: String
+    @Timestamp(key: Constants.Users.FieldKeys.createdAt, on: .create) var createdAt: Date?
+    @Field(key: Constants.Users.FieldKeys.isModerator) var isModerator: Bool
+    @Field(key: Constants.Users.FieldKeys.isActive) var isActive: Bool
+
     init() { }
     
     init(id: UUID? = nil,
          name: String,
          email: String,
-         passwordHash: String) {
+         passwordHash: String,
+         isModerator: Bool = false,
+         isActive: Bool = true
+         ) {
         self.id = id
         self.name = name
         self.email = email
         self.passwordHash = passwordHash
+        self.isModerator = isModerator
+        self.isActive = isActive
     }
 }
 
@@ -42,7 +51,10 @@ extension User {
     static func create(from userSignup: UserSignup) throws -> User {
         User(name: userSignup.name,
              email: userSignup.email,
-             passwordHash: try Bcrypt.hash(userSignup.password))
+             passwordHash: try Bcrypt.hash(userSignup.password),
+             isModerator: userSignup.isModerator,
+             isActive: userSignup.isActive
+             )
     }
 
     func createToken(source: SessionSource) throws -> UserToken {
@@ -57,7 +69,10 @@ extension User {
     func asPublic() throws -> Public {
         Public(id: try requireID(),
                name: name,
-               createdAt: createdAt)
+               createdAt: createdAt,
+               isModerator: isModerator,
+               isActive: isActive
+               )
     }
 }
 
