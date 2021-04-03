@@ -111,7 +111,7 @@ extension Message {
     struct MessageToSend : Content{
         let id:UUID
         let message:String
-        let timestamp:Date
+        let timestamp:Double
         let username:String
         let userID:UUID?
         let flag:Bool?
@@ -121,7 +121,7 @@ extension Message {
             self.message = message
             self.username = user.name
             self.userID = user.id
-            self.timestamp = timestamp
+            self.timestamp = timestamp.timeIntervalSince1970
             self.flag = flag
         }
     }
