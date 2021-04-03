@@ -28,7 +28,7 @@ class WebSocketController {
         var messagesToSend : [Message.MessageToSend] = []
         _ = Message.query(on: req.db)
             .with(\.$ownerId)
-            .sort(\.$timestamp, .descending)
+            .sort(\.$timestamp, .ascending)
             .all()
             .map { (messages) in
                 for message in messages {
