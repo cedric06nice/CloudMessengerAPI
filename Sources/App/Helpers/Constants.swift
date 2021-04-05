@@ -4,6 +4,7 @@
 //
 //  Created by cedric06nice on 07/03/2021.
 //
+
 import Fluent
 
 struct Constants {
@@ -18,6 +19,8 @@ struct Constants {
             static var flag: FieldKey = "flag"
             static var isModerator: FieldKey = "is_moderator"
             static var isActive: FieldKey = "is_active"
+            static var picture: FieldKey = "picture"
+            static var description: FieldKey = "description"
         }
         struct FieldKeysAsString {
             static var name = "name"
@@ -28,6 +31,8 @@ struct Constants {
             static var flag = "flag"
             static var isModerator = "is_moderator"
             static var isActive = "is_active"
+            static var picture = "picture"
+            static var description = "description"
         }
     }
     struct Token {
@@ -53,12 +58,14 @@ struct Constants {
             static var ownerId: FieldKey = "owner_id"
             static var message: FieldKey = "message"
             static var flag: FieldKey = "flag"
+            static var isPicture: FieldKey = "is_picture"
         }
         struct FieldKeysAsString {
             static var timestamp = "timestamp"
             static var ownerId = "owner_id"
             static var message = "message"
             static var flag = "flag"
+            static var isPicture = "is_picture"
         }
     }
 }

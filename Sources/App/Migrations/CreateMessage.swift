@@ -15,6 +15,7 @@ struct CreateMessage: Migration {
             .field(Constants.Message.FieldKeys.message, .string, .required)
             .field(Constants.Message.FieldKeys.ownerId, .uuid, .required, .references("users", "id"))
             .field(Constants.Message.FieldKeys.flag, .bool)
+            .field(Constants.Message.FieldKeys.isPicture, .bool)
             .create()
     }
 

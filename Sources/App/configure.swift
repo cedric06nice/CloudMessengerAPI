@@ -6,6 +6,9 @@ import Vapor
 // configures your application
 public func configure(_ app: Application) throws {
     
+    app.routes.defaultMaxBodySize = "10mb"
+    app.middleware.use(FileMiddleware(publicDirectory: app.directory.publicDirectory))
+    
     if app.environment == .production {
         app.http.server.configuration.hostname = Secrets.Server.hostname
         app.http.server.configuration.port = Secrets.Server.port
@@ -18,7 +21,7 @@ public func configure(_ app: Application) throws {
     } else {
         app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
     }
-
+    
     // configure migrations
     app.migrations.add(CreateUser())
     app.migrations.add(CreateUserToken())
