@@ -16,6 +16,8 @@ final class User: Model, Content {
         let createdAt: Date?
         let isModerator: Bool
         let isActive: Bool
+        let picture: String?
+        let description: String?
     }
     
     static let schema = Constants.Users.schema
@@ -27,6 +29,8 @@ final class User: Model, Content {
     @Timestamp(key: Constants.Users.FieldKeys.createdAt, on: .create) var createdAt: Date?
     @Field(key: Constants.Users.FieldKeys.isModerator) var isModerator: Bool
     @Field(key: Constants.Users.FieldKeys.isActive) var isActive: Bool
+    @Field(key: Constants.Users.FieldKeys.picture) var picture: String?
+    @Field(key: Constants.Users.FieldKeys.description) var description: String?
 
     init() { }
     
@@ -35,7 +39,9 @@ final class User: Model, Content {
          email: String,
          passwordHash: String,
          isModerator: Bool = false,
-         isActive: Bool = true
+         isActive: Bool = true,
+         picture: String? = nil,
+         description: String? = nil
          ) {
         self.id = id
         self.name = name
@@ -43,6 +49,8 @@ final class User: Model, Content {
         self.passwordHash = passwordHash
         self.isModerator = isModerator
         self.isActive = isActive
+        self.picture = picture
+        self.description = description
     }
 }
 
@@ -71,7 +79,9 @@ extension User {
                name: name,
                createdAt: createdAt,
                isModerator: isModerator,
-               isActive: isActive
+               isActive: isActive,
+               picture: picture,
+               description: description
                )
     }
 }

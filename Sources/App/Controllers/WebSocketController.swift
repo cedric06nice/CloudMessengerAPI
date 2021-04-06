@@ -39,7 +39,8 @@ class WebSocketController {
                                                                   message: message.message,
                                                                   timestamp: timestamp,
                                                                   user: user,
-                                                                  flag: message.flag)
+                                                                  flag: message.flag,
+                                                                  isPicture: message.isPicture)
                         messagesToSend.append(messageToSend)
                     }
                 }
@@ -58,11 +59,9 @@ class WebSocketController {
             getAllMessagesAndSendForAll(req: req)
         }
         
-        print(text)
         
         if let jsonText = text.data(using: .utf8) {
-            if let message = try? JSONDecoder().decode(Message.self, from: jsonText){
-                print("message recu")
+            if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
                 _ = message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
                 //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
                 getAllMessagesAndSendForAll(req: req)
@@ -91,9 +90,11 @@ class WebSocketController {
         }
     }
     
-    func onClose(webSocketWithId:WebSocketWithId){
-        storage.removeAll { (wsId) -> Bool in
-            return wsId.id == webSocketWithId.id
+    func onClose(webSocketWithId:WebSocketWithId) {
+        if storage.count > 0 {
+            storage.removeAll { (wsId) -> Bool in
+                        return wsId.id == webSocketWithId.id
+                    }
         }
     }
 }
@@ -115,14 +116,21 @@ extension Message {
         let username:String
         let userID:UUID?
         let flag:Bool?
+        let isPicture:Bool
         
-        init(id:UUID, message:String, timestamp:Date, user:User, flag:Bool?) {
+        init(id:UUID,
+             message:String,
+             timestamp:Date,
+             user:User,
+             flag:Bool?,
+             isPicture:Bool) {
             self.id = id
             self.message = message
             self.username = user.name
             self.userID = user.id
             self.timestamp = timestamp.timeIntervalSince1970
             self.flag = flag
+            self.isPicture = isPicture
         }
     }
 }
