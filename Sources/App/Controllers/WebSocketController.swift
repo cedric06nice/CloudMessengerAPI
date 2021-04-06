@@ -59,12 +59,9 @@ class WebSocketController {
             getAllMessagesAndSendForAll(req: req)
         }
         
-        print("Text = " + text)
         
         if let jsonText = text.data(using: .utf8) {
-            print("message recu")
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
-                print("message decoded")
                 _ = message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
                 //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
                 getAllMessagesAndSendForAll(req: req)
