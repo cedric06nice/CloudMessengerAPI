@@ -16,7 +16,7 @@ final class Message: Model, Content {
     @Parent(key: Constants.Message.FieldKeys.ownerId) var ownerId: User
     @Field(key: Constants.Message.FieldKeys.message) var message: String
     @Field(key: Constants.Message.FieldKeys.flag) var flag: Bool?
-    @Field(key: Constants.Message.FieldKeys.isPicture) var isPicture: Bool
+    @Field(key: Constants.Message.FieldKeys.isPicture) var isPicture: Bool?
     
     init() { }
     
@@ -24,7 +24,7 @@ final class Message: Model, Content {
          ownerId: User.IDValue,
          message: String,
          flag: Bool? = nil,
-         isPicture: Bool = false) {
+         isPicture: Bool? = false) {
         self.id = id
         self.$ownerId.id = ownerId
         self.message = message
