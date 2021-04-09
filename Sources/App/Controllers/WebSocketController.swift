@@ -40,7 +40,7 @@ class WebSocketController {
                                                                   timestamp: timestamp,
                                                                   user: user,
                                                                   flag: message.flag,
-                                                                  isPicture: message.isPicture)
+                                                                  isPicture: message.isPicture ?? false)
                         messagesToSend.append(messageToSend)
                     }
                 }
@@ -51,7 +51,6 @@ class WebSocketController {
                 self.sendMessageForAll(message: allMessagesJson)
             }
     }
-    
     
     //Lorsqu'on recoit du texte on l'ananlyse, on verify si c'est un message...
     func onReceive(ws: WebSocket, req: Request, text: String) throws {
@@ -135,10 +134,7 @@ extension Message {
     }
 }
 
-
 struct WebSocketWithId {
     let id:UUID
     let ws:WebSocket
 }
-
-
