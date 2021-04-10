@@ -59,6 +59,7 @@ struct Constants {
             static var message: FieldKey = "message"
             static var flag: FieldKey = "flag"
             static var isPicture: FieldKey = "is_picture"
+            static var channel: FieldKey = "channel"
         }
         struct FieldKeysAsString {
             static var timestamp = "timestamp"
@@ -66,6 +67,20 @@ struct Constants {
             static var message = "message"
             static var flag = "flag"
             static var isPicture = "is_picture"
+            static var channel = "channel"
+        }
+    }
+    struct Channel {
+        static var schema = "channel"
+        struct FieldKeys {
+            static var channelName: FieldKey = "channel_name"
+            static var channel_user: FieldKey = "channel_users_id"
+            static var channel_isPublic: FieldKey = "isPublic"
+        }
+        struct FieldKeysAsString {
+            static var channelName = "channel_name"
+            static var channel_user = "channel_users_id"
+            static var channel_isPublic = "isPublic"
         }
     }
 }

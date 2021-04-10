@@ -40,7 +40,8 @@ class WebSocketController {
                                                                   timestamp: timestamp,
                                                                   user: user,
                                                                   flag: message.flag,
-                                                                  isPicture: message.isPicture ?? false)
+                                                                  isPicture: message.isPicture ?? false,
+                                                                  channel: message.channel)
                         messagesToSend.append(messageToSend)
                     }
                 }
@@ -92,7 +93,7 @@ class WebSocketController {
     func onClose(webSocketWithId:WebSocketWithId) {
         if storage.count > 0 {
             storage.removeAll { (wsId) -> Bool in
-                        return wsId.id == webSocketWithId.id
+                return wsId.id == webSocketWithId.id
                     }
         }
     }
@@ -116,13 +117,15 @@ extension Message {
         let userID:UUID?
         let flag:Bool?
         let isPicture:Bool
+        let channel:UUID?
         
         init(id:UUID,
              message:String,
              timestamp:Date,
              user:User,
              flag:Bool?,
-             isPicture:Bool) {
+             isPicture:Bool,
+             channel:UUID? = nil) {
             self.id = id
             self.message = message
             self.username = user.name
@@ -130,6 +133,7 @@ extension Message {
             self.timestamp = timestamp.timeIntervalSince1970
             self.flag = flag
             self.isPicture = isPicture
+            self.channel = channel
         }
     }
 }

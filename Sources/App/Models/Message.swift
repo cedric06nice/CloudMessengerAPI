@@ -17,6 +17,7 @@ final class Message: Model, Content {
     @Field(key: Constants.Message.FieldKeys.message) var message: String
     @Field(key: Constants.Message.FieldKeys.flag) var flag: Bool?
     @Field(key: Constants.Message.FieldKeys.isPicture) var isPicture: Bool?
+    @Field(key: Constants.Message.FieldKeys.channel) var channel : UUID?
     
     init() { }
     
@@ -24,11 +25,13 @@ final class Message: Model, Content {
          ownerId: User.IDValue,
          message: String,
          flag: Bool? = nil,
-         isPicture: Bool? = false) {
+         isPicture: Bool? = false,
+         channel: UUID?) {
         self.id = id
         self.$ownerId.id = ownerId
         self.message = message
         self.flag = flag
         self.isPicture = isPicture
+        self.channel = channel
     }
 }

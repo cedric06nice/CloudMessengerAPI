@@ -26,6 +26,8 @@ public func configure(_ app: Application) throws {
     app.migrations.add(CreateUserToken())
     app.migrations.add(CreateMessage())
     app.migrations.add(DBUpdatePicture())
+    app.migrations.add(CreateChannel())
+    app.migrations.add(UpdateMessageForChannel())
 
     // enable automatic migration
     try app.autoMigrate().wait()
