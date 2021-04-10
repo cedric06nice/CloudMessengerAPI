@@ -7,80 +7,26 @@
 
 import Foundation
 import Vapor
+import Fluent
 
 class WebSocketController {
     //On crée un tableau vide à l'instance qui servira à recuillir tous les clients qui se connectent au serveur 
     var storage: [WebSocketWithId] = []
     var timer:Timer? = nil
     
-    func addWs(webSocketWithID: WebSocketWithId) {
-        storage.append(webSocketWithID)
-    }
-    
-    //lorsque j'appelle cette fonction j'envoie un message à toutes les personnes connecté
-    func sendMessageForAll(message: String) {
-        for webSocketWithID in storage {
-            webSocketWithID.ws.send(message)
-        }
-    }
-    
-    func getAllMessagesAndSendForAll(req: Request) {
-        var messagesToSend : [Message.MessageToSend] = []
-        _ = Message.query(on: req.db)
-            .with(\.$ownerId)
-            .sort(\.$timestamp, .ascending)
-            .all()
-            .map { (messages) in
-                for message in messages {
-                    if let id = message.id,
-                       let user = message.$ownerId.value,
-                       let timestamp = message.timestamp {
-                        let messageToSend = Message.MessageToSend(id: id,
-                                                                  message: message.message,
-                                                                  timestamp: timestamp,
-                                                                  user: user,
-                                                                  flag: message.flag,
-                                                                  isPicture: message.isPicture ?? false,
-                                                                  channel: message.channel)
-                        messagesToSend.append(messageToSend)
-                    }
-                }
-                guard let allMessagesJson = try? JSONEncoder().encodeToString(messagesToSend) else {
-                    print("echec conversion tableau message to send en json")
-                    return
-                }
-                self.sendMessageForAll(message: allMessagesJson)
-            }
-    }
-    
-    //Lorsqu'on recoit du texte on l'ananlyse, on verify si c'est un message...
-    func onReceive(ws: WebSocket, req: Request, text: String) throws {
-        if text == "get-all-messages" {
-            getAllMessagesAndSendForAll(req: req)
-        }
-        
-        
-        if let jsonText = text.data(using: .utf8) {
-            if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
-                _ = message.save(on: req.db) //...Si on à bien un message on l'enregistre dans la base de donées
-                //On vient donc de recevoir un message il faut donc renvoyer tous les messages aux utilisateurs
-                getAllMessagesAndSendForAll(req: req)
-            }
-        }
-    }
-    
     func WebSocketsManagement(ws: WebSocket, req: Request) {
         do {
             let _ = try req.auth.require(User.self)
-            webSocketInit(webSocket: ws, req: req)
+            let channel = try? req.query.decode(WebSocketChannelOnInit.self)
+            webSocketInit(webSocket: ws, req: req, channel: channel?.channel)
         }catch {
             ws.send("Unauthorized !")
             _ = ws.close()
         }
     }
     
-    func webSocketInit(webSocket: WebSocket, req:Request){
-        let webSocketWithID = WebSocketWithId(id: UUID(), ws: webSocket)
+    func webSocketInit(webSocket: WebSocket, req:Request, channel:UUID?){
+        let webSocketWithID = WebSocketWithId(id: UUID(), ws: webSocket, channel: channel)
         addWs(webSocketWithID: webSocketWithID)
         webSocketWithID.ws.onText { (ws, text) in
             try? self.onReceive(ws: ws, req: req, text: text)
@@ -88,13 +34,57 @@ class WebSocketController {
         _ = webSocketWithID.ws.onClose.always { (_) in
             self.onClose(webSocketWithId: webSocketWithID)
         }
+        getAllMessagesAndSendForAll(req: req, channel: channel)
+    }
+    
+    func addWs(webSocketWithID: WebSocketWithId) {
+        storage.append(webSocketWithID)
+    }
+    
+    func sendMessageForAll(message: String, channel:UUID?) {
+        for webSocketWithID in storage {
+            if webSocketWithID.channel == channel {
+                webSocketWithID.ws.send(message)
+            }
+        }
+    }
+    
+    
+    func getAllMessagesAndSendForAll(req: Request, channel: UUID?) {
+        _ = Message.query(on: req.db)
+            .filter(\.$channel == channel)
+            .with(\.$ownerId)
+            .sort(\.$timestamp, .ascending)
+            .all()
+            .flatMapThrowing { (messageArray) -> [Message.MessageToSend]  in
+                return try messageArray.map { (message) -> Message.MessageToSend in
+                    Message.MessageToSend(id: try message.requireID(), message: message.message, timestamp: message.timestamp ?? Date(), user: message.ownerId, flag: message.flag, isPicture: message.isPicture ?? false, channel: message.channel)
+                }
+            }.flatMapThrowing{ (messagesForSendingArray) in
+                guard let messagesForSendingJson = try? JSONEncoder().encodeToString(messagesForSendingArray) else{throw Abort(HTTPResponseStatus.conflict, reason: "Internal Serveur Error: Cant't convert message to json.")}
+                self.sendMessageForAll(message: messagesForSendingJson, channel: channel)
+            }
+    }
+    
+    func onReceive(ws: WebSocket, req: Request, text: String) throws {
+        if text == "get-all-messages" {
+            getAllMessagesAndSendForAll(req: req, channel: nil)
+        }
+        
+        
+        if let jsonText = text.data(using: .utf8) {
+            if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
+                _ = message.save(on: req.db)
+                getAllMessagesAndSendForAll(req: req, channel: message.channel)
+            }
+        }
     }
     
     func onClose(webSocketWithId:WebSocketWithId) {
         if storage.count > 0 {
             storage.removeAll { (wsId) -> Bool in
                 return wsId.id == webSocketWithId.id
-                    }
+            }
         }
     }
 }
@@ -133,7 +123,13 @@ extension Message {
             self.timestamp = timestamp.timeIntervalSince1970
             self.flag = flag
             self.isPicture = isPicture
-            self.channel = channel
+            
+            if channel != nil{
+                self.channel = channel!
+            }else {
+                self.channel = nil
+            }
+            
         }
     }
 }
@@ -141,4 +137,22 @@ extension Message {
 struct WebSocketWithId {
     let id:UUID
     let ws:WebSocket
+    let channel: UUID?
+    init(id:UUID, ws:WebSocket, channel : UUID? = nil) {
+        self.id = id
+        self.ws = ws
+        self.channel = channel
+    }
+}
+
+struct getMessageByChan : Content {
+    var requestQuerie:String
+    var channel:UUID?
+}
+
+struct WebSocketChannelOnInit : Content {
+    let channel:UUID?
+    init(channel: UUID? = nil){
+        self.channel = channel
+    }
 }

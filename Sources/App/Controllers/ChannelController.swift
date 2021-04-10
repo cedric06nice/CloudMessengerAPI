@@ -47,7 +47,11 @@ struct ChannelController: RouteCollection {
                         do {return try user.requireID()}catch{return UUID()}
                     }
                 }.flatMap { (userID) in
-                    Channel(name: newChannel.name, channelUser: userID, isPublic: true).save(on: req.db).transform(to: HTTPStatus.ok)
+                    Channel(name: newChannel.name,
+                            channelUser: userID,
+                            isPublic: true)
+                        .save(on: req.db)
+                        .transform(to: HTTPStatus.ok)
                 }
             })
             

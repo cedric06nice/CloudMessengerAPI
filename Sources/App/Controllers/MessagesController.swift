@@ -47,7 +47,7 @@ struct MessagesController: RouteCollection {
                 message.flag = true
                 return message.update(on: req.db)
                     .map({ () in
-                        websocketController.getAllMessagesAndSendForAll(req: req)
+                        websocketController.getAllMessagesAndSendForAll(req: req, channel: message.channel)
                     })
                     .transform(to: HTTPStatus.init(statusCode: 200))
             }
@@ -64,7 +64,7 @@ struct MessagesController: RouteCollection {
                 message.flag = false
                 return message.update(on: req.db)
                     .map({ () in
-                        websocketController.getAllMessagesAndSendForAll(req: req)
+                        websocketController.getAllMessagesAndSendForAll(req: req, channel: message.channel)
                     })
                     .transform(to: HTTPStatus.init(statusCode: 200))
             }
@@ -81,7 +81,7 @@ struct MessagesController: RouteCollection {
                             else { throw Abort(.forbidden) }
                  _ = message.delete(on: req.db)
                     .map({ () in
-                        websocketController.getAllMessagesAndSendForAll(req: req)
+                        websocketController.getAllMessagesAndSendForAll(req: req, channel: message.channel)
                     })
                 
                 return HTTPStatus.init(statusCode: 200)
