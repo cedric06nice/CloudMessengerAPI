@@ -73,16 +73,18 @@ struct MessagesController: RouteCollection {
     fileprivate func deleteMessage(req: Request) throws -> EventLoopFuture<HTTPStatus> {
         let user = try req.auth.require(User.self)
         let messageIdReceive = try req.content.decode(Message.PostingMessageId.self)
-        guard user.isModerator == true || messageIdReceive.id == user.id
-            else { throw Abort(.forbidden) }
+        
         return Message.find(messageIdReceive.id, on: req.db)
             .unwrap(or: Abort(.badRequest))
-            .flatMap { (message) -> EventLoopFuture<HTTPStatus> in
-                return message.delete(on: req.db)
+            .flatMapThrowing { (message) -> HTTPStatus in
+                guard user.isModerator == true || messageIdReceive.id == user.id
+                            else { throw Abort(.forbidden) }
+                 _ = message.delete(on: req.db)
                     .map({ () in
                         websocketController.getAllMessagesAndSendForAll(req: req)
                     })
-                    .transform(to: HTTPStatus.init(statusCode: 200))
+                
+                return HTTPStatus.init(statusCode: 200)
             }
     }
 }
