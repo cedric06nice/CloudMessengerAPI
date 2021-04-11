@@ -9,7 +9,8 @@ import Fluent
 import Vapor
 
 struct MessagesController: RouteCollection {
-    var websocketController = WebSocketController()
+    let websocketController = WebSocketController()
+    let photoController = PhotoController()
     func boot(routes: RoutesBuilder) throws {
         let messagesRoute = routes.grouped("messages")
         
@@ -19,6 +20,11 @@ struct MessagesController: RouteCollection {
         tokenProtected.post("unflag-message", use: unflagMessage)
         tokenProtected.post("delete-message", use: deleteMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
+        
+        let photoRoute = routes.grouped("photos")
+        let tokenProtectedPhoto = photoRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
+        tokenProtectedPhoto.post("upload-picture", use: uploadPicture)
+        tokenProtectedPhoto.get("get-picture", use: photoController.getPicture)
         
         
         //création du Websocket protéger par token auth
@@ -31,6 +37,12 @@ struct MessagesController: RouteCollection {
         try req.auth.require(User.self)
         let message = try req.content.decode(Message.self)
         return message.save(on: req.db).transform(to: message)
+    }
+    
+    fileprivate func uploadPicture(req: Request) throws -> EventLoopFuture<HTTPStatus> {
+        return try photoController.uploadPicture(req: req) { (channel) in
+            websocketController.getAllMessagesAndSendForAll(req: req, channel: channel)
+        }
     }
     
     fileprivate func getAllMessages(req: Request) throws -> EventLoopFuture<[Message]> {
@@ -83,7 +95,6 @@ struct MessagesController: RouteCollection {
                     .map({ () in
                         websocketController.getAllMessagesAndSendForAll(req: req, channel: message.channel)
                     })
-                
                 return HTTPStatus.init(statusCode: 200)
             }
     }
