@@ -31,9 +31,7 @@ struct ProfilePictureController {
         }
         
         let user = try req.auth.require(User.self)
-        print("USER OK")
         let input = try req.content.decode(Input.self)
-        print("INPUT OK")
         guard input.file.data.readableBytes > 0 else { throw Abort(.badRequest) }
         
         let path = req.application.directory.publicDirectory + "profile/" + input.file.filename
@@ -46,7 +44,6 @@ struct ProfilePictureController {
                 return req.application.fileio.write(fileHandle: handle,
                                                     buffer: input.file.data,
                                                     eventLoop: req.eventLoop).flatMapThrowing {() -> EventLoopFuture<Void> in
-                                                        
                                                         try handle.close()
                                                         user.picture = input.file.filename
                                                         return user.update(on: req.db)
