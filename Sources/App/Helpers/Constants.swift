@@ -21,6 +21,7 @@ struct Constants {
             static var isActive: FieldKey = "is_active"
             static var picture: FieldKey = "picture"
             static var description: FieldKey = "description"
+            static var profilePicture: FieldKey = "profile_picture"
         }
         struct FieldKeysAsString {
             static var name = "name"
@@ -33,6 +34,7 @@ struct Constants {
             static var isActive = "is_active"
             static var picture = "picture"
             static var description = "description"
+            static var profilePicture = "profile_picture"
         }
     }
     struct Token {

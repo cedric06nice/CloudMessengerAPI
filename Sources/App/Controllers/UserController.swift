@@ -30,7 +30,7 @@ extension UserSignup: Validatable {
 }
 
 struct UserController: RouteCollection {
-    
+    let profilePictureController = ProfilePictureController()
     func boot(routes: RoutesBuilder) throws {
         let usersRoute = routes.grouped("users")
         usersRoute.post("signup", use: create)
@@ -41,7 +41,11 @@ struct UserController: RouteCollection {
         let tokenProtected = usersRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
         tokenProtected.get("me", use: getOwnUser)
         tokenProtected.get("all-users", use: getAllUsers)
+        tokenProtected.post("profile-picture", use: profilePictureController.uploadPicture)
+        tokenProtected.get("profile-picture", use: profilePictureController.getPicture)
     }
+    
+    
     
     fileprivate func create(req: Request) throws -> EventLoopFuture<NewSession> {
         try UserSignup.validate(content: req)
