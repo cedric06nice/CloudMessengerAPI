@@ -20,6 +20,7 @@ struct MessagesController: RouteCollection {
         tokenProtected.post("unflag-message", use: unflagMessage)
         tokenProtected.post("delete-message", use: deleteMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
+        tokenProtected.get("refresh-messages", use: refreshMessages)
         
         let photoRoute = routes.grouped("photos")
         let tokenProtectedPhoto = photoRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
@@ -31,6 +32,12 @@ struct MessagesController: RouteCollection {
         tokenProtected.webSocket("message-web-socket") { (req, ws) in
             websocketController.WebSocketsManagement(ws: ws, req: req)
         }
+    }
+    
+    fileprivate func refreshMessages(req : Request) throws -> HTTPResponseStatus {
+        let channel = try req.query.decode(Channel.ChannelID.self)
+        websocketController.getAllMessagesAndSendForAll(req: req, channel: channel.channel)
+        return HTTPResponseStatus.ok
     }
     
     fileprivate func newMessage(req: Request) throws -> EventLoopFuture<Message> {
@@ -103,5 +110,11 @@ struct MessagesController: RouteCollection {
 extension Message {
     struct PostingMessageId : Content {
         let id:UUID
+    }
+}
+
+extension Channel {
+    struct ChannelID : Content{
+        let channel :UUID?
     }
 }

@@ -58,7 +58,7 @@ class WebSocketController {
             .all()
             .flatMapThrowing { (messageArray) -> [Message.MessageToSend]  in
                 return try messageArray.map { (message) -> Message.MessageToSend in
-                    Message.MessageToSend(id: try message.requireID(), message: message.message, timestamp: message.timestamp ?? Date(), user: message.ownerId, flag: message.flag, isPicture: message.isPicture ?? false, channel: message.channel)
+                    Message.MessageToSend(id: try message.requireID(), message: message.message, timestamp: message.timestamp ?? Date(), user: message.ownerId, flag: message.flag, isPicture: message.isPicture ?? false, channel: message.channel, ownerPicture: message.ownerId.picture)
                 }
             }.flatMapThrowing{ (messagesForSendingArray) in
                 guard let messagesForSendingJson = try? JSONEncoder().encodeToString(messagesForSendingArray) else{throw Abort(HTTPResponseStatus.conflict, reason: "Internal Serveur Error: Cant't convert message to json.")}
@@ -108,6 +108,7 @@ extension Message {
         let flag:Bool?
         let isPicture:Bool
         let channel:UUID?
+        let owner_picture: String?
         
         init(id:UUID,
              message:String,
@@ -115,7 +116,8 @@ extension Message {
              user:User,
              flag:Bool?,
              isPicture:Bool,
-             channel:UUID? = nil) {
+             channel:UUID? = nil,
+             ownerPicture: String?) {
             self.id = id
             self.message = message
             self.username = user.name
@@ -123,6 +125,8 @@ extension Message {
             self.timestamp = timestamp.timeIntervalSince1970
             self.flag = flag
             self.isPicture = isPicture
+            self.owner_picture = ownerPicture
+            
             
             if channel != nil{
                 self.channel = channel!

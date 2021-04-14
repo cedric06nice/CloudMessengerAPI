@@ -62,6 +62,7 @@ struct Constants {
             static var flag: FieldKey = "flag"
             static var isPicture: FieldKey = "is_picture"
             static var channel: FieldKey = "channel"
+            static var ownerPicture: FieldKey = "owner_picture"
         }
         struct FieldKeysAsString {
             static var timestamp = "timestamp"
@@ -70,6 +71,7 @@ struct Constants {
             static var flag = "flag"
             static var isPicture = "is_picture"
             static var channel = "channel"
+            static var ownerPicture = "owner_picture"
         }
     }
     struct Channel {

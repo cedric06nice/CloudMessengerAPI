@@ -43,6 +43,7 @@ struct UserController: RouteCollection {
         tokenProtected.get("all-users", use: getAllUsers)
         tokenProtected.post("profile-picture", use: profilePictureController.uploadPicture)
         tokenProtected.get("profile-picture", use: profilePictureController.getPicture)
+        tokenProtected.get("canGetPicture", use: profilePictureController.getifPicture)
     }
     
     
