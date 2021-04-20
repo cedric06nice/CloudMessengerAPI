@@ -13,23 +13,25 @@ class WebSocketController {
     //On crée un tableau vide à l'instance qui servira à recuillir tous les clients qui se connectent au serveur 
     var storage: [WebSocketWithId] = []
     var timer:Timer? = nil
+    let notificationController = NotificationController()
     
     func WebSocketsManagement(ws: WebSocket, req: Request) {
         do {
-            let _ = try req.auth.require(User.self)
+            let user = try req.auth.require(User.self)
             let channel = try? req.query.decode(WebSocketChannelOnInit.self)
-            webSocketInit(webSocket: ws, req: req, channel: channel?.channel)
+            webSocketInit(webSocket: ws, req: req, channel: channel?.channel, user: user)
         }catch {
             ws.send("Unauthorized !")
             _ = ws.close()
         }
     }
     
-    func webSocketInit(webSocket: WebSocket, req:Request, channel:UUID?){
+    func webSocketInit(webSocket: WebSocket, req:Request, channel:UUID?, user: User){
         let webSocketWithID = WebSocketWithId(id: UUID(), ws: webSocket, channel: channel)
         addWs(webSocketWithID: webSocketWithID)
+        
         webSocketWithID.ws.onText { (ws, text) in
-            try? self.onReceive(ws: ws, req: req, text: text)
+            try? self.onReceive(ws: ws, req: req, text: text, user: user)
         }
         _ = webSocketWithID.ws.onClose.always { (_) in
             self.onClose(webSocketWithId: webSocketWithID)
@@ -66,7 +68,7 @@ class WebSocketController {
             }
     }
     
-    func onReceive(ws: WebSocket, req: Request, text: String) throws {
+    func onReceive(ws: WebSocket, req: Request, text: String, user:User) throws {
         if text == "get-all-messages" {
             getAllMessagesAndSendForAll(req: req, channel: nil)
         }
@@ -74,7 +76,24 @@ class WebSocketController {
         
         if let jsonText = text.data(using: .utf8) {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
-                _ = message.save(on: req.db)
+                _ = message.save(on: req.db).map({
+                    _ = Channel.find(message.channel, on: req.db).flatMap { (channel) -> EventLoopFuture<Void> in
+                        if(channel?.isPublic==false){
+                            _ = self.notificationController.sendNotificationToModerator(title: user.name, body: message.message, req: req).map({ (printable) in
+                                print(printable)
+                            })
+                            return req.eventLoop.future()
+                            
+                        }else{
+                            _ = self.notificationController.sendNotificationToGeneral(title: user.name, body: message.message, req: req).map { (printable) in
+                                print(printable)
+                            }
+                            return req.eventLoop.future()
+                           
+                        }
+                    }
+                    
+                })
                 getAllMessagesAndSendForAll(req: req, channel: message.channel)
             }
         }

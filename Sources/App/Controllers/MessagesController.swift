@@ -9,6 +9,7 @@ import Fluent
 import Vapor
 
 struct MessagesController: RouteCollection {
+    let notificationController = NotificationController()
     let websocketController = WebSocketController()
     let photoController = PhotoController()
     func boot(routes: RoutesBuilder) throws {
@@ -21,6 +22,7 @@ struct MessagesController: RouteCollection {
         tokenProtected.post("delete-message", use: deleteMessage)
         tokenProtected.get("all-messages", use: getAllMessages)
         tokenProtected.get("refresh-messages", use: refreshMessages)
+        
         
         let photoRoute = routes.grouped("photos")
         let tokenProtectedPhoto = photoRoute.grouped(UserToken.authenticator(), UserToken.guardMiddleware())
@@ -43,7 +45,22 @@ struct MessagesController: RouteCollection {
     fileprivate func newMessage(req: Request) throws -> EventLoopFuture<Message> {
         try req.auth.require(User.self)
         let message = try req.content.decode(Message.self)
-        return message.save(on: req.db).transform(to: message)
+        return message.save(on: req.db).flatMap({
+            Channel.find(message.channel, on: req.db)
+                .map { (channel) in
+                    User.find(message.$ownerId.$id.wrappedValue, on: req.db).unwrap(or: Abort(.badGateway)).map { (user) in
+                        if(channel?.isPublic == false){
+                            
+                            _ = notificationController.sendNotificationToModerator(title: user.name,
+                                                                             body: message.message,
+                                                                             req: req
+                                                                             )
+                        }else {
+                            _ = notificationController.sendNotificationToGeneral(title: user.name, body: message.message, req: req)
+                        }
+                    }
+                }
+        }).transform(to: message)
     }
     
     fileprivate func uploadPicture(req: Request) throws -> EventLoopFuture<HTTPStatus> {

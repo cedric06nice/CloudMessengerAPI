@@ -56,7 +56,6 @@ struct ProfilePictureController {
         }
     
     func uploadPicture(req: Request) throws -> EventLoopFuture<HTTPStatus> {
-        var messageController = MessagesController()
         struct Input: Content {
             var file: File
         }
