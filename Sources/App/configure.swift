@@ -9,7 +9,7 @@ public func configure(_ app: Application) throws {
     
     //configuration of notifications
     app.fcm.configuration
-        = FCMConfiguration(pathToServiceAccountKey: Secrets.Notication.PATH_TO_JSONKEY)
+        = FCMConfiguration(pathToServiceAccountKey: Secrets.Notification.PATH_TO_JSONKEY)
     
     app.fcm.configuration?.apnsDefaultConfig = FCMApnsConfig(headers: [:], aps: FCMApnsApsObject(
         badge: 1,
