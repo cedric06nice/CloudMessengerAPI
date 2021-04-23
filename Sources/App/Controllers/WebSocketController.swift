@@ -89,9 +89,9 @@ class WebSocketController {
                             return req.eventLoop.future()
                             
                         }else{
-                            var title = "# Général  -  " + user.name
+                            var title = "#Général  -  " + user.name
                             if let channelName = channel?.name {
-                                title = "# " + channelName + "  -  " + user.name
+                                title = "#" + channelName + "  -  " + user.name
                             }
                             _ = self.notificationController.sendNotificationToGeneral(title: title, body: message.message, req: req).map { (printable) in
                                 print(printable)
