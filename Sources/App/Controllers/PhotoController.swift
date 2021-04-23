@@ -10,6 +10,8 @@ import Vapor
 
 struct PhotoController {
     
+    let notificationController = NotificationController();
+    
     func getPicture(req: Request) throws -> Response {
         struct Filename : Content {
             let filename: String
@@ -45,6 +47,29 @@ struct PhotoController {
                         try handle.close()
                         let message = Message.init(ownerId: try user.requireID(), message: input.file.filename, flag: nil, isPicture: true, channel: channelID?.channelID)
                         _ = message.save(on: req.db).map({ ()  in
+                            _ = Channel.find(message.channel, on: req.db).flatMap { (channel) -> EventLoopFuture<Void> in
+                                if(channel?.isPublic == false){
+                                    var title = "# Général  -  " + user.name
+                                    if let channelName = channel?.name {
+                                        title = "# " + channelName + "  -  " + user.name
+                                    }
+                                    _ = self.notificationController.sendNotificationToModerator(title: title, body: message.message, req: req).map({ (printable) in
+                                        print(printable)
+                                    })
+                                    return req.eventLoop.future()
+                                    
+                                }else{
+                                    var title = "#Général  -  " + user.name
+                                    if let channelName = channel?.name {
+                                        title = "#" + channelName + "  -  " + user.name
+                                    }
+                                    _ = self.notificationController.sendNotificationToGeneral(title: title, body: message.message, req: req).map { (printable) in
+                                        print(printable)
+                                    }
+                                    return req.eventLoop.future()
+                                   
+                                }
+                            }
                             onUpload(channelID?.channelID)
                         })
                         return HTTPStatus.ok
