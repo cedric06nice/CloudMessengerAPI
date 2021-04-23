@@ -79,7 +79,6 @@ class WebSocketController {
                 _ = message.save(on: req.db).map({
                     _ = Channel.find(message.channel, on: req.db).flatMap { (channel) -> EventLoopFuture<Void> in
                         if(channel?.isPublic == false){
-                            print("channel is not public")
                             var title = "# Général  -  " + user.name
                             if let channelName = channel?.name {
                                 title = "# " + channelName + "  -  " + user.name
@@ -90,7 +89,6 @@ class WebSocketController {
                             return req.eventLoop.future()
                             
                         }else{
-                            print("channel is public")
                             var title = "# Général  -  " + user.name
                             if let channelName = channel?.name {
                                 title = "# " + channelName + "  -  " + user.name
