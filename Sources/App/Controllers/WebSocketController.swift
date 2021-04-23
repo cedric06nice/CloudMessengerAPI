@@ -78,13 +78,19 @@ class WebSocketController {
             if let message = try? JSONDecoder().decode(Message.self, from: jsonText) {
                 _ = message.save(on: req.db).map({
                     _ = Channel.find(message.channel, on: req.db).flatMap { (channel) -> EventLoopFuture<Void> in
-                        if(channel?.isPublic==false){
-                            _ = self.notificationController.sendNotificationToModerator(title: user.name, body: message.message, req: req).map({ (printable) in
+                        if(channel?.isPublic == false){
+                            print("channel is not public")
+                            var title = "# Général  -  " + user.name
+                            if let channelName = channel?.name {
+                                title = "# " + channelName + "  -  " + user.name
+                            }
+                            _ = self.notificationController.sendNotificationToModerator(title: title, body: message.message, req: req).map({ (printable) in
                                 print(printable)
                             })
                             return req.eventLoop.future()
                             
                         }else{
+                            print("channel is public")
                             var title = "# Général  -  " + user.name
                             if let channelName = channel?.name {
                                 title = "# " + channelName + "  -  " + user.name
