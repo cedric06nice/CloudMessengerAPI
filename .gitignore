@@ -6,9 +6,10 @@ DerivedData/
 .DS_Store
 db.sqlite
 .swiftpm
-Sources/App/Helpers/Secrets.swift
 /docker-compose.yml
 /Dockerfile
 /.dockerignore
-/Sources/App/Helpers/Secrets.swift
 Secrets.swift
+/Sources/App/Helpers/Secrets.swift
+Sources/App/Helpers/Secrets.swift
+/Sources/App/Helpers/fcm.json

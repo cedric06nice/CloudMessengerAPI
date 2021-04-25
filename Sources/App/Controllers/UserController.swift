@@ -16,6 +16,14 @@ struct UserSignup: Content {
     let isActive: Bool
 }
 
+extension UserSignup: Validatable {
+    static func validations(_ validations: inout Validations) {
+        validations.add("name", as: String.self, is: !.empty && .alphanumeric && .count(3...))
+        validations.add("email", as: String.self, is: !.empty && .email)
+        validations.add("password", as: String.self, is: .count(6...))
+    }
+}
+
 struct NewSession: Content {
     let token: String
     let user: User.Public
@@ -26,11 +34,9 @@ struct UserUpdatePassword: Content {
     let newPassword: String
 }
 
-extension UserSignup: Validatable {
+extension UserUpdatePassword: Validatable {
     static func validations(_ validations: inout Validations) {
-        validations.add("name", as: String.self, is: !.empty && .alphanumeric && .count(3...))
-        validations.add("email", as: String.self, is: !.empty && .email)
-        validations.add("password", as: String.self, is: .count(6...))
+        validations.add("newPassword", as: String.self, is: .count(6...))
     }
 }
 
@@ -51,8 +57,6 @@ struct UserController: RouteCollection {
         tokenProtected.get("canGetPicture", use: profilePictureController.getifPicture)
         tokenProtected.post("update-password", use: updatePassword)
     }
-    
-    
     
     fileprivate func create(req: Request) throws -> EventLoopFuture<NewSession> {
         try UserSignup.validate(content: req)
@@ -122,13 +126,16 @@ struct UserController: RouteCollection {
     }
     
     fileprivate func updatePassword(req: Request) throws -> HTTPStatus {
+        try UserUpdatePassword.validate(content: req)
         let user = try req.auth.require(User.self)
         let userUpdatePassword = try req.content.decode(UserUpdatePassword.self)
         if try user.verify(password: userUpdatePassword.currentPassword) {
             user.passwordHash = try Bcrypt.hash(userUpdatePassword.newPassword)
             _ = user.update(on: req.db)
-                .map { return HTTPStatus.ok}
+            return HTTPStatus.ok
         }
-        return HTTPStatus.unauthorized
+        else {
+            return HTTPStatus.unauthorized
+        }
     }
 }
