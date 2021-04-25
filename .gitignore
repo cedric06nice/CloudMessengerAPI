@@ -11,3 +11,4 @@ Sources/App/Helpers/Secrets.swift
 /Dockerfile
 /.dockerignore
 /Sources/App/Helpers/Secrets.swift
+Secrets.swift
