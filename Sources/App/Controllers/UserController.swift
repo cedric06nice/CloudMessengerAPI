@@ -21,6 +21,11 @@ struct NewSession: Content {
     let user: User.Public
 }
 
+struct UserUpdatePassword: Content {
+    let currentPassword: String
+    let newPassword: String
+}
+
 extension UserSignup: Validatable {
     static func validations(_ validations: inout Validations) {
         validations.add("name", as: String.self, is: !.empty && .alphanumeric && .count(3...))
@@ -44,6 +49,7 @@ struct UserController: RouteCollection {
         tokenProtected.post("profile-picture", use: profilePictureController.uploadPicture)
         tokenProtected.get("profile-picture", use: profilePictureController.getPicture)
         tokenProtected.get("canGetPicture", use: profilePictureController.getifPicture)
+        tokenProtected.post("update-password", use: updatePassword)
     }
     
     
@@ -113,5 +119,16 @@ struct UserController: RouteCollection {
             .filter(\.$name == name)
             .first()
             .map { $0 == nil }
+    }
+    
+    fileprivate func updatePassword(req: Request) throws -> HTTPStatus {
+        let user = try req.auth.require(User.self)
+        let userUpdatePassword = try req.content.decode(UserUpdatePassword.self)
+        if try user.verify(password: userUpdatePassword.currentPassword) {
+            user.passwordHash = try Bcrypt.hash(userUpdatePassword.newPassword)
+            _ = user.update(on: req.db)
+                .map { return HTTPStatus.ok}
+        }
+        return HTTPStatus.unauthorized
     }
 }
