@@ -111,7 +111,7 @@ struct MessagesController: RouteCollection {
         return Message.find(messageIdReceive.id, on: req.db)
             .unwrap(or: Abort(.badRequest))
             .flatMapThrowing { (message) -> HTTPStatus in
-                guard user.isModerator == true || message.ownerId.id == user.id
+                guard user.isModerator == true || message.$ownerId.id == user.id
                             else { throw Abort(.forbidden) }
                  _ = message.delete(on: req.db)
                     .map({ () in
