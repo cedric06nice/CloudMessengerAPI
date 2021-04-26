@@ -125,17 +125,16 @@ struct UserController: RouteCollection {
             .map { $0 == nil }
     }
     
-    fileprivate func updatePassword(req: Request) throws -> HTTPStatus {
+    fileprivate func updatePassword(req: Request) throws -> EventLoopFuture<HTTPStatus> {
         try UserUpdatePassword.validate(content: req)
         let user = try req.auth.require(User.self)
         let userUpdatePassword = try req.content.decode(UserUpdatePassword.self)
-        if try user.verify(password: userUpdatePassword.currentPassword) {
+        let verifyUserPassword = try user.verify(password: userUpdatePassword.currentPassword)
+        if verifyUserPassword {
             user.passwordHash = try Bcrypt.hash(userUpdatePassword.newPassword)
-            _ = user.update(on: req.db)
-            return HTTPStatus.ok
+            return user.update(on: req.db)
+                .transform(to: HTTPStatus.ok)
         }
-        else {
-            return HTTPStatus.unauthorized
-        }
+        else { return req.eventLoop.future(HTTPStatus.unauthorized) }
     }
 }

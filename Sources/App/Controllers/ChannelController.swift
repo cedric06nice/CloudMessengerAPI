@@ -56,7 +56,8 @@ struct ChannelController: RouteCollection {
             })
             
             return HTTPStatus.ok
-        }else {
+        }
+        else {
             _ = User.query(on: req.db)
                 .filter(\.$isModerator == true)
                 .all()
