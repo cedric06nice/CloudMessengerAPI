@@ -32,6 +32,7 @@ public func configure(_ app: Application) throws {
                                  password: Secrets.MySQL.password,
                                  database: Secrets.MySQL.database,
                                  tlsConfiguration: TLSConfiguration.forClient(certificateVerification: .none)), as: .mysql)
+        app.migrations.add(UpdateFieldMessages())
     } else {
         app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
     }
