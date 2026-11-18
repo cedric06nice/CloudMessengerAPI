@@ -1,8 +1,8 @@
 # CloudMessengerAPI
 
-The back end of a group messaging app: a REST and WebSocket API in Swift with [Vapor 4](https://vapor.codes) and Fluent (MySQL in production, SQLite locally). Its client is [PGMessengerApp](https://github.com/cedric06nice/PGMessengerApp).
+The back end of **PG Messenger**, a group chat published on the App Store and Google Play: a REST and WebSocket API in Swift with [Vapor 4](https://vapor.codes) and Fluent (MySQL in production, SQLite locally).
 
-Built in March–April 2021 as a team challenge for [Purple Giraffe](https://www.purplegiraffe.fr), an online school for mobile development, with Nicolas Picot and Quentin Rolland.
+Built in 2021 by a team of four as a challenge for [Purple Giraffe](https://www.purplegiraffe.fr), an online school for mobile development. The main client is the [Flutter app](https://github.com/QuentinDeviOS/pg_messenger); I also wrote a [SwiftUI prototype client](https://github.com/cedric06nice/PGMessengerApp).
 
 ## What I built
 
@@ -10,7 +10,9 @@ Built in March–April 2021 as a team challenge for [Purple Giraffe](https://www
 - Sign-up and login with hashed passwords and expiring bearer tokens, input validation, and duplicate name and email checks.
 - The messages model and routes, picture messages, and moderation: moderator accounts, flagging users and messages, unflagging and deleting.
 
-Nicolas built the real-time WebSocket channel and message reporting; Quentin worked on configuration and fixes.
+In the Flutter app I built the moderation tools, password change, English/French translation, the app icon and splash screen, and the release builds.
+
+On the API, Nicolas Picot built the real-time WebSocket channel and message reporting, and Quentin Rolland worked on configuration and fixes.
 
 ## Routes
 
